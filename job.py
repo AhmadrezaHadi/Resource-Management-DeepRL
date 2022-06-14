@@ -26,4 +26,7 @@ class Job:
                 and self.enter_time == __o.enter_time and \
                 self.start_time == __o.start_time and \
                 self.finish_time == __o.finish_time
+
+    def __str__(self) -> str:
+        return f"Job (id: {self.id}, length: {self.length}, resource vector: {np.array2string(self.resource_vector)}"
     
