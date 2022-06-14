@@ -19,6 +19,7 @@ env_params = {
     'job_sequence_length' : job_seq_len,
     'simulation_length' : 5,
     'number_resources' : 2,
+    'job_rate' : 0.70,
     'input_height' :  time_horizon,
     'backlog_size' : backlog_size,
     'max_resource_slots' : r,
