@@ -10,7 +10,7 @@ class Parameters:
         self.output_filename = 'data/tmp'
 
         self.num_epochs = 10000         # number of training epochs
-        self.simu_len = 10             # length of the busy cycle that repeats itself
+        self.simu_len = 100             # length of the busy cycle that repeats itself
         self.num_ex = 1                # number of sequences
 
         self.output_freq = 10          # interval for output and store parameters
@@ -19,7 +19,7 @@ class Parameters:
         self.episode_max_length = 200  # enforcing an artificial terminal
 
         self.num_res = 2               # number of resources in the system
-        self.num_nw = 5                # maximum allowed number of work in the queue
+        self.num_nw = 10                # maximum allowed number of work in the queue
 
         self.time_horizon = 20         # number of time steps in the graph
         self.max_job_len = 15          # maximum duration of new jobs

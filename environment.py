@@ -1,15 +1,23 @@
+from cmath import inf
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-import theano
-
+import gym
+from gym import spaces
 import parameters
 
 
-class Env:
+class Env(gym.Env):
+    metadata = {'render.modes': ['human']}
     def __init__(self, pa, nw_len_seqs=None, nw_size_seqs=None,
                  seed=42, render=False, repre='image', end='no_new_job'):
 
+        super(Env, self).__init__()
+        self.action_space = spaces.Discrete(pa.num_nw + 1)
+        # self.observation_shape = (76,)
+        self.observation_space = spaces.Box(low=0, high=1000, shape=(pa.time_horizon * (pa.num_res + 1) + pa.num_nw * (pa.num_res + 1) + 1,), dtype=np.float64)
+        # self.observation_space = spaces.Box(low=0, high=1000, shape=(76,), dtype=np.float64)
+        # spaces.MultiDiscrete()
         self.pa = pa
         self.render = render
         self.repre = repre  # image or compact representation   
@@ -54,6 +62,9 @@ class Env:
         self.job_backlog = JobBacklog(pa)
         self.job_record = JobRecord()
         self.extra_info = ExtraInfo(pa)
+    
+    def render(self, mode='human'):
+        pass
 
     def generate_sequence_work(self, simu_len):
 
@@ -116,7 +127,7 @@ class Env:
             compact_repr = np.zeros(self.pa.time_horizon * (self.pa.num_res + 1) +  # current work
                                     self.pa.num_nw * (self.pa.num_res + 1) +        # new work
                                     1,                                              # backlog indicator
-                                    dtype=theano.config.floatX)
+                                    dtype=np.float64)
 
             cr_pt = 0
 
@@ -318,7 +329,9 @@ class Env:
         if self.render:
             self.plot_state()
 
-        return ob, reward, done, info
+        information = {}
+        information['job_record'] = info
+        return ob, reward, done, information
 
     def reset(self):
         self.seq_idx = 0
@@ -331,6 +344,10 @@ class Env:
         self.job_record = JobRecord()
         self.extra_info = ExtraInfo(self.pa)
 
+        return self.observe()
+    
+    def close(self) -> None:
+        return super().close()
 
 class Job:
     def __init__(self, res_vec, job_len, job_id, enter_time):
@@ -459,7 +476,7 @@ def test_backlog():
     pa.new_job_rate = 1
     pa.compute_dependent_parameters()
 
-    env = Env(pa, render=True, repre='image')
+    env = Env(pa, render=True, repre='compact')
 
     env.step(5)
     env.step(5)
@@ -475,22 +492,23 @@ def test_backlog():
     env.step(5)
     env.step(5)
     env.step(5)
-    env.step(5)
+    print(env.step(5)[0])
 
     job = env.job_backlog.backlog[0]
     env.step(0)
     assert env.job_slot.slot[0] == job
 
     job = env.job_backlog.backlog[0]
-    env.step(0)
+    print(env.step(0)[0].shape)
     assert env.job_slot.slot[0] == job
 
     job = env.job_backlog.backlog[0]
-    env.step(1)
+    print(env.step(1)[0].shape)
     assert env.job_slot.slot[1] == job
 
     job = env.job_backlog.backlog[0]
-    env.step(1)
+    print(env.step(1)[0].shape)
+    print(pa.time_horizon * (pa.num_res + 1) + pa.num_nw * (pa.num_res + 1) + 1)
     assert env.job_slot.slot[1] == job
 
     env.step(5)
@@ -546,5 +564,5 @@ def test_image_speed():
 
 if __name__ == '__main__':
     test_backlog()
-    test_compact_speed()
-    test_image_speed()
+    # test_compact_speed()
+    # test_image_speed()
