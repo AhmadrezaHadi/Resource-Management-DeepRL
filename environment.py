@@ -13,12 +13,12 @@ class Env(gym.Env):
                  seed=42, render=False, repre='image', end='no_new_job'):
 
         super(Env, self).__init__()
-        self.action_space = spaces.Discrete(pa.num_nw + 1)
-        # self.observation_shape = (76,)
-        self.observation_space = spaces.Box(low=0, high=1000, shape=(pa.time_horizon * (pa.num_res + 1) + pa.num_nw * (pa.num_res + 1) + 1,), dtype=np.float64)
-        # self.observation_space = spaces.Box(low=0, high=1000, shape=(76,), dtype=np.float64)
-        # spaces.MultiDiscrete()
         self.pa = pa
+        self.action_space = spaces.Discrete(pa.num_nw + 1)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(self.pa.network_input_height, int(self.pa.network_input_width)), dtype=np.float64)
+        # self.observation_shape = (76,)
+        # self.observation_space = spaces.Box(low=0, high=10, shape=(pa.time_horizon * (pa.num_res + 1) + pa.num_nw * (pa.num_res + 1) + 1,), dtype=np.float64)
+        # spaces.MultiDiscrete()
         self.render = render
         self.repre = repre  # image or compact representation   
         self.end = end  # termination type, 'no_new_job' or 'all_done'
@@ -218,7 +218,7 @@ class Env(gym.Env):
         plt.imshow(extra_info, interpolation='nearest', vmax=1)
 
         # plt.show()     # manual
-        plt.pause(0.01)  # automatic
+        plt.pause(0.00000000000001)  # automatic
 
     def get_reward(self):
 

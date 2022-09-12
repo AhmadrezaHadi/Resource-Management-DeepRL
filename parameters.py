@@ -7,16 +7,16 @@ import job_distribution
 class Parameters:
     def __init__(self):
 
-        self.output_filename = 'data/tmp'
+        # self.output_filename = 'data/tmp'
 
-        self.num_epochs = 10000         # number of training epochs
-        self.simu_len = 100             # length of the busy cycle that repeats itself
+        # self.num_epochs = 10000         # number of training epochs
+        self.simu_len = 20             # length of the busy cycle that repeats itself
         self.num_ex = 1                # number of sequences
 
-        self.output_freq = 10          # interval for output and store parameters
+        # self.output_freq = 10          # interval for output and store parameters
 
-        self.num_seq_per_batch = 10    # number of sequences to compute baseline
-        self.episode_max_length = 200  # enforcing an artificial terminal
+        # self.num_seq_per_batch = 10    # number of sequences to compute baseline
+        self.episode_max_length = 150  # enforcing an artificial terminal
 
         self.num_res = 2               # number of resources in the system
         self.num_nw = 10                # maximum allowed number of work in the queue
@@ -59,10 +59,10 @@ class Parameters:
         self.hold_penalty = -1        # penalty for holding things in the new work screen
         self.dismiss_penalty = -1     # penalty for missing a job because the queue is full
 
-        self.num_frames = 1           # number of frames to combine and process
-        self.lr_rate = 0.001          # learning rate
-        self.rms_rho = 0.9            # for rms prop
-        self.rms_eps = 1e-9           # for rms prop
+        # self.num_frames = 1           # number of frames to combine and process
+        # self.lr_rate = 0.001          # learning rate
+        # self.rms_rho = 0.9            # for rms prop
+        # self.rms_eps = 1e-9           # for rms prop
 
         self.unseen = False  # change random seed to generate unseen example
 
