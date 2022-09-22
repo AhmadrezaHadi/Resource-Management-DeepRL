@@ -39,14 +39,14 @@ TIMESTEPS = args.timesteps
 REPRE = args.representation
 
 
-def train_model(model, timesteps, callback, algorithm):
-    try:
-        model.learn(700_000, callback=checkpoint_callback,
-                    tb_log_name=f'{algorithm}')
-    except:
-        model.save_replay_buffer('tmp/last_model.pkl')
-        model.save('tmp/last_model')
-        print(f"model trained using {algorithm} algorithm")
+# def train_model(model, timesteps, callback, algorithm):
+#     try:
+#         model.learn(700_000, callback=checkpoint_callback,
+#                     tb_log_name=f'{algorithm}')
+#     except:
+#         # model.save_replay_buffer('tmp/last_model.pkl')
+#         model.save('tmp/last_model')
+#         print(f"model trained using {algorithm} algorithm")
 
 
 def eval_model(model, env):
@@ -71,18 +71,35 @@ def eval_model(model, env):
 if __name__ == '__main__':
     pa = Parameters()
     pa.compute_dependent_parameters()
+    pa.unseen = True
     env = Env(pa, render=RENDER, repre=REPRE, end='all_done')
     env.reset()
 
+    net = [128, 128, 128, 128, 128]
+    policy_kwargs = {
+        "net_arch": net
+    }
+
     if args.mode == 'train':
-        checkpoint_callback = CheckpointCallback(save_freq=10000,
-                                                 save_path=f'./models/{args.algorithm}',
+        checkpoint_callback = CheckpointCallback(save_freq=20000,
+                                                 save_path=f'./models/{args.algorithm}_3',
                                                  name_prefix=f'{args.algorithm}')
+
         if args.algorithm == 'ppo':
-            model = PPO('MlpPolicy', env, tensorboard_log='./tensorboard/')
-            train_model(model, TIMESTEPS, checkpoint_callback, args.algorithm)
+            print('creating model')
+            model = PPO('MlpPolicy', env,
+                        tensorboard_log='./tensorboard/', device='auto', policy_kwargs=policy_kwargs)
+            try:
+                print("training")
+                model.learn(TIMESTEPS, callback=checkpoint_callback,
+                            tb_log_name=f'{args.algorithm}_128_4layer')
+            except:
+                # model.save_replay_buffer('tmp/last_model.pkl')
+                model.save('tmp/last_model')
+                print(f"model trained using {args.algorithm} algorithm")
         elif args.algorithm == 'dqn':
             pass
+
     if args.mode == 'eval':
         if args.algorithm == 'ppo':
             if not args.load:

@@ -37,7 +37,8 @@ class Env(gym.Env):
 
         # set up random seed
         if self.pa.unseen:
-            np.random.seed(314159)
+            pass
+            # np.random.seed(314159)
         else:
             np.random.seed(seed)
 
@@ -364,6 +365,9 @@ class Env(gym.Env):
 
     def reset(self):
         self.seq_idx = 0
+        self.seq_no += 1
+        if self.seq_no == self.pa.num_ex:
+            self.seq_no = 0
         self.curr_time = 0
 
         # initialize system

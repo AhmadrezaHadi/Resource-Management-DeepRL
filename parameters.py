@@ -11,7 +11,7 @@ class Parameters:
 
         # self.num_epochs = 10000             # number of training epochs
         self.simu_len = 10                  # length of the busy cycle that repeats itself
-        self.num_ex = 1                     # number of sequences
+        self.num_ex = 600_000                     # number of sequences
 
         # self.output_freq = 10          # interval for output and store parameters
 
