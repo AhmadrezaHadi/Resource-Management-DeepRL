@@ -132,8 +132,12 @@ dmypy.json
 
 
 
-a.py
+test.ipynb
 todo.txt
 Pipfile
 Pipfile.lock
 tensorboard/
+models/
+tmp/
+test.py
+a.py
