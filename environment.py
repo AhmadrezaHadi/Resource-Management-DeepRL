@@ -1,4 +1,5 @@
 from cmath import inf
+from email.mime import image
 import numpy as np
 import math
 import matplotlib.pyplot as plt
@@ -9,18 +10,25 @@ import parameters
 
 class Env(gym.Env):
     metadata = {'render.modes': ['human']}
+
     def __init__(self, pa, nw_len_seqs=None, nw_size_seqs=None,
                  seed=42, render=False, repre='image', end='no_new_job'):
 
         super(Env, self).__init__()
         self.pa = pa
         self.action_space = spaces.Discrete(pa.num_nw + 1)
-        self.observation_space = spaces.Box(low=0, high=1, shape=(self.pa.network_input_height, int(self.pa.network_input_width)), dtype=np.float64)
-        # self.observation_shape = (76,)
-        # self.observation_space = spaces.Box(low=0, high=10, shape=(pa.time_horizon * (pa.num_res + 1) + pa.num_nw * (pa.num_res + 1) + 1,), dtype=np.float64)
-        # spaces.MultiDiscrete()
+        if repr == 'image':
+            self.observation_space = spaces.Box(low=0, high=1,
+                                                shape=(1, self.pa.network_input_height, int(
+                                                    self.pa.network_input_width)),
+                                                dtype=np.float32)
+        else:
+            self.observation_space = spaces.Box(low=0, high=10,
+                                                shape=(
+                                                    pa.time_horizon * (pa.num_res + 1) + pa.num_nw * (pa.num_res + 1) + 1,),
+                                                dtype=np.float64)
         self.render = render
-        self.repre = repre  # image or compact representation   
+        self.repre = repre  # image or compact representation
         self.end = end  # termination type, 'no_new_job' or 'all_done'
 
         self.nw_dist = pa.dist.bi_model_dist
@@ -35,18 +43,18 @@ class Env(gym.Env):
 
         if nw_len_seqs is None or nw_size_seqs is None:
             # generate new work
-            self.nw_len_seqs, self.nw_size_seqs = \
-                self.generate_sequence_work(self.pa.simu_len * self.pa.num_ex)
+            self.nw_len_seqs, self.nw_size_seqs = self.generate_sequence_work(
+                self.pa.simu_len * self.pa.num_ex)
 
             self.workload = np.zeros(pa.num_res)
             for i in range(pa.num_res):
-                self.workload[i] = \
-                    np.sum(self.nw_size_seqs[:, i] * self.nw_len_seqs) / \
+                self.workload[i] = np.sum(self.nw_size_seqs[:, i] * self.nw_len_seqs) / \
                     float(pa.res_slot) / \
                     float(len(self.nw_len_seqs))
-                print(("Load on # " + str(i) + " resource dimension is " + str(self.workload[i])))
+                print(("Load on # " + str(i) +
+                      " resource dimension is " + str(self.workload[i])))
             self.nw_len_seqs = np.reshape(self.nw_len_seqs,
-                                           [self.pa.num_ex, self.pa.simu_len])
+                                          [self.pa.num_ex, self.pa.simu_len])
             self.nw_size_seqs = np.reshape(self.nw_size_seqs,
                                            [self.pa.num_ex, self.pa.simu_len, self.pa.num_res])
         else:
@@ -62,7 +70,7 @@ class Env(gym.Env):
         self.job_backlog = JobBacklog(pa)
         self.job_record = JobRecord()
         self.extra_info = ExtraInfo(pa)
-    
+
     def render(self, mode='human'):
         pass
 
@@ -89,21 +97,25 @@ class Env(gym.Env):
     def observe(self):
         if self.repre == 'image':
 
-            backlog_width = int(math.ceil(self.pa.backlog_size / float(self.pa.time_horizon)))
+            backlog_width = int(
+                math.ceil(self.pa.backlog_size / float(self.pa.time_horizon)))
 
-            image_repr = np.zeros((self.pa.network_input_height, int(self.pa.network_input_width)))
+            image_repr = np.zeros(
+                (self.pa.network_input_height, int(self.pa.network_input_width)))
 
             ir_pt = 0
 
             for i in range(self.pa.num_res):
 
-                image_repr[:, ir_pt: ir_pt + self.pa.res_slot] = self.machine.canvas[i, :, :]
+                image_repr[:, ir_pt: ir_pt +
+                           self.pa.res_slot] = self.machine.canvas[i, :, :]
                 ir_pt += self.pa.res_slot
 
                 for j in range(self.pa.num_nw):
 
                     if self.job_slot.slot[j] is not None:  # fill in a block of work
-                        image_repr[: self.job_slot.slot[j].len, ir_pt: ir_pt + self.job_slot.slot[j].res_vec[i]] = 1
+                        image_repr[: self.job_slot.slot[j].len,
+                                   ir_pt: ir_pt + self.job_slot.slot[j].res_vec[i]] = 1
 
                     ir_pt += self.pa.max_job_size
 
@@ -115,33 +127,39 @@ class Env(gym.Env):
             ir_pt += backlog_width
 
             image_repr[:, ir_pt: ir_pt + 1] = self.extra_info.time_since_last_new_job / \
-                                              float(self.extra_info.max_tracking_time_since_last_job)
+                float(self.extra_info.max_tracking_time_since_last_job)
             ir_pt += 1
 
             assert ir_pt == image_repr.shape[1]
 
+            image_repr = image_repr.reshape(
+                (1, self.pa.network_input_height, int(self.pa.network_input_width)))
+            print(image_repr.shape)
             return image_repr
 
         elif self.repre == 'compact':
 
             compact_repr = np.zeros(self.pa.time_horizon * (self.pa.num_res + 1) +  # current work
-                                    self.pa.num_nw * (self.pa.num_res + 1) +        # new work
+                                    # new work
+                                    self.pa.num_nw * (self.pa.num_res + 1) +
                                     1,                                              # backlog indicator
                                     dtype=np.float64)
 
             cr_pt = 0
 
             # current work reward, after each time step, how many jobs left in the machine
-            job_allocated = np.ones(self.pa.time_horizon) * len(self.machine.running_job)
+            job_allocated = np.ones(self.pa.time_horizon) * \
+                len(self.machine.running_job)
             for j in self.machine.running_job:
-                job_allocated[j.finish_time - self.curr_time: ] -= 1
+                job_allocated[j.finish_time - self.curr_time:] -= 1
 
             compact_repr[cr_pt: cr_pt + self.pa.time_horizon] = job_allocated
             cr_pt += self.pa.time_horizon
 
             # current work available slots
             for i in range(self.pa.num_res):
-                compact_repr[cr_pt: cr_pt + self.pa.time_horizon] = self.machine.avbl_slot[:, i]
+                compact_repr[cr_pt: cr_pt +
+                             self.pa.time_horizon] = self.machine.avbl_slot[:, i]
                 cr_pt += self.pa.time_horizon
 
             # new work duration and size
@@ -162,7 +180,8 @@ class Env(gym.Env):
             compact_repr[cr_pt] = int(self.job_backlog.curr_size)
             cr_pt += 1
 
-            assert cr_pt == len(compact_repr)  # fill up the compact representation vector
+            # fill up the compact representation vector
+            assert cr_pt == len(compact_repr)
 
             return compact_repr
 
@@ -177,13 +196,16 @@ class Env(gym.Env):
                         1 + self.pa.num_nw + 1,  # first +1 for current work, last +1 for backlog queue
                         i * (self.pa.num_nw + 1) + skip_row + 1)  # plot the backlog at the end, +1 to avoid 0
 
-            plt.imshow(self.machine.canvas[i, :, :], interpolation='nearest', vmax=1)
+            plt.imshow(self.machine.canvas[i, :, :],
+                       interpolation='nearest', vmax=1)
 
             for j in range(self.pa.num_nw):
 
-                job_slot = np.zeros((self.pa.time_horizon, self.pa.max_job_size))
+                job_slot = np.zeros(
+                    (self.pa.time_horizon, self.pa.max_job_size))
                 if self.job_slot.slot[j] is not None:  # fill in a block of work
-                    job_slot[: self.job_slot.slot[j].len, :self.job_slot.slot[j].res_vec[i]] = 1
+                    job_slot[: self.job_slot.slot[j].len,
+                             :self.job_slot.slot[j].res_vec[i]] = 1
 
                 plt.subplot(self.pa.num_res,
                             1 + self.pa.num_nw + 1,  # first +1 for current work, last +1 for backlog queue
@@ -195,11 +217,14 @@ class Env(gym.Env):
                     skip_row += 1
 
         skip_row -= 1
-        backlog_width = int(math.ceil(self.pa.backlog_size / float(self.pa.time_horizon)))
+        backlog_width = int(
+            math.ceil(self.pa.backlog_size / float(self.pa.time_horizon)))
         backlog = np.zeros((self.pa.time_horizon, backlog_width))
 
-        backlog[: int(self.job_backlog.curr_size / backlog_width), : backlog_width] = 1
-        backlog[int(self.job_backlog.curr_size / backlog_width), : int(self.job_backlog.curr_size % backlog_width)] = 1
+        backlog[: int(self.job_backlog.curr_size /
+                      backlog_width), : backlog_width] = 1
+        backlog[int(self.job_backlog.curr_size / backlog_width),
+                : int(self.job_backlog.curr_size % backlog_width)] = 1
 
         plt.subplot(self.pa.num_res,
                     1 + self.pa.num_nw + 1,  # first +1 for current work, last +1 for backlog queue
@@ -212,8 +237,8 @@ class Env(gym.Env):
                     self.pa.num_res * (self.pa.num_nw + 1) + skip_row + 1)  # plot the backlog at the end, +1 to avoid 0
 
         extra_info = np.ones((self.pa.time_horizon, 1)) * \
-                     self.extra_info.time_since_last_new_job / \
-                     float(self.extra_info.max_tracking_time_since_last_job)
+            self.extra_info.time_since_last_new_job / \
+            float(self.extra_info.max_tracking_time_since_last_job)
 
         plt.imshow(extra_info, interpolation='nearest', vmax=1)
 
@@ -249,7 +274,8 @@ class Env(gym.Env):
         elif self.job_slot.slot[a] is None:  # implicit void action
             status = 'MoveOn'
         else:
-            allocated = self.machine.allocate_job(self.job_slot.slot[a], self.curr_time)
+            allocated = self.machine.allocate_job(
+                self.job_slot.slot[a], self.curr_time)
             if not allocated:  # implicit void action
                 status = 'MoveOn'
             else:
@@ -278,13 +304,15 @@ class Env(gym.Env):
             if not done:
 
                 if self.seq_idx < self.pa.simu_len:  # otherwise, end of new job sequence, i.e. no new jobs
-                    new_job = self.get_new_job_from_seq(self.seq_no, self.seq_idx)
+                    new_job = self.get_new_job_from_seq(
+                        self.seq_no, self.seq_idx)
 
                     if new_job.len > 0:  # a new job comes
 
                         to_backlog = True
                         for i in range(self.pa.num_nw):
-                            if self.job_slot.slot[i] is None:  # put in new visible job slots
+                            # put in new visible job slots
+                            if self.job_slot.slot[i] is None:
                                 self.job_slot.slot[i] = new_job
                                 self.job_record.record[new_job.id] = new_job
                                 to_backlog = False
@@ -309,7 +337,8 @@ class Env(gym.Env):
 
             # dequeue backlog
             if self.job_backlog.curr_size > 0:
-                self.job_slot.slot[a] = self.job_backlog.backlog[0]  # if backlog empty, it will be 0
+                # if backlog empty, it will be 0
+                self.job_slot.slot[a] = self.job_backlog.backlog[0]
                 self.job_backlog.backlog[: -1] = self.job_backlog.backlog[1:]
                 self.job_backlog.backlog[-1] = None
                 self.job_backlog.curr_size -= 1
@@ -325,7 +354,7 @@ class Env(gym.Env):
                 self.seq_no = (self.seq_no + 1) % self.pa.num_ex
 
             self.reset()
-        
+
         if self.render:
             self.plot_state()
 
@@ -345,9 +374,10 @@ class Env(gym.Env):
         self.extra_info = ExtraInfo(self.pa)
 
         return self.observe()
-    
+
     def close(self) -> None:
         return super().close()
+
 
 class Job:
     def __init__(self, res_vec, job_len, job_id, enter_time):
@@ -381,12 +411,15 @@ class Machine:
         self.time_horizon = pa.time_horizon
         self.res_slot = pa.res_slot
 
-        self.avbl_slot = np.ones((self.time_horizon, self.num_res)) * self.res_slot
+        self.avbl_slot = np.ones(
+            (self.time_horizon, self.num_res)) * self.res_slot
 
         self.running_job = []
 
         # colormap for graphical representation
-        self.colormap = np.arange(1 / float(pa.job_num_cap), 1, 1 / float(pa.job_num_cap))
+        self.colormap = np.arange(1 / float(pa.job_num_cap),
+                                  1,
+                                  1 / float(pa.job_num_cap))
         np.random.shuffle(self.colormap)
 
         # graphical representation
@@ -428,7 +461,8 @@ class Machine:
                 for res in range(self.num_res):
                     for i in range(canvas_start_time, canvas_end_time):
                         avbl_slot = np.where(self.canvas[res, i, :] == 0)[0]
-                        self.canvas[res, i, avbl_slot[: job.res_vec[res]]] = new_color
+                        self.canvas[res, i,
+                                    avbl_slot[: job.res_vec[res]]] = new_color
 
                 break
 
@@ -436,7 +470,7 @@ class Machine:
 
     def time_proceed(self, curr_time):
 
-        self.avbl_slot[:-1, :] = self.avbl_slot[1:, :]
+        self.avbl_slot[: -1, :] = self.avbl_slot[1:, :]
         self.avbl_slot[-1, :] = self.res_slot
 
         for job in self.running_job:
@@ -446,7 +480,7 @@ class Machine:
 
         # update graphical representation
 
-        self.canvas[:, :-1, :] = self.canvas[:, 1:, :]
+        self.canvas[:, : -1, :] = self.canvas[:, 1:, :]
         self.canvas[:, -1, :] = 0
 
 
@@ -508,7 +542,8 @@ def test_backlog():
 
     job = env.job_backlog.backlog[0]
     print(env.step(1)[0].shape)
-    print(pa.time_horizon * (pa.num_res + 1) + pa.num_nw * (pa.num_res + 1) + 1)
+    print(pa.time_horizon * (pa.num_res + 1) +
+          pa.num_nw * (pa.num_res + 1) + 1)
     assert env.job_slot.slot[1] == job
 
     env.step(5)
