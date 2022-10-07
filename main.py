@@ -39,16 +39,6 @@ TIMESTEPS = args.timesteps
 REPRE = args.representation
 
 
-# def train_model(model, timesteps, callback, algorithm):
-#     try:
-#         model.learn(700_000, callback=checkpoint_callback,
-#                     tb_log_name=f'{algorithm}')
-#     except:
-#         # model.save_replay_buffer('tmp/last_model.pkl')
-#         model.save('tmp/last_model')
-#         print(f"model trained using {algorithm} algorithm")
-
-
 def eval_model(model, env):
     methods = ['Random', 'SJF', 'Model Algorithm']
     obs = env.reset()
