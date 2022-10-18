@@ -348,13 +348,13 @@ class Env(gym.Env):
 
         info = self.job_record
 
-        if done:
-            self.seq_idx = 0
+        # if done:
+        #     self.seq_idx = 0
 
-            if not repeat:
-                self.seq_no = (self.seq_no + 1) % self.pa.num_ex
+        #     if not repeat:
+        #         self.seq_no = (self.seq_no + 1) % self.pa.num_ex
 
-            self.reset()
+        #     self.reset()
 
         if self.render:
             self.plot_state()
@@ -365,9 +365,24 @@ class Env(gym.Env):
 
     def reset(self):
         self.seq_idx = 0
-        self.seq_no += 1
-        if self.seq_no == self.pa.num_ex:
-            self.seq_no = 0
+
+        # Generate new work Sequence
+        np.random.seed(42)
+        self.nw_len_seqs, self.nw_size_seqs = self.generate_sequence_work(
+            self.pa.simu_len * self.pa.num_ex)
+
+        self.workload = np.zeros(self.pa.num_res)
+        for i in range(self.pa.num_res):
+            self.workload[i] = np.sum(self.nw_size_seqs[:, i] * self.nw_len_seqs) / \
+                float(self.pa.res_slot) / \
+                float(len(self.nw_len_seqs))
+            print(("Load on # " + str(i) +
+                   " resource dimension is " + str(self.workload[i])))
+        self.nw_len_seqs = np.reshape(self.nw_len_seqs,
+                                      [self.pa.num_ex, self.pa.simu_len])
+        self.nw_size_seqs = np.reshape(self.nw_size_seqs,
+                                       [self.pa.num_ex, self.pa.simu_len, self.pa.num_res])
+        ###
         self.curr_time = 0
 
         # initialize system

@@ -25,7 +25,8 @@ class Dist:
     def normal_dist(self):
 
         # new work duration
-        nw_len = np.random.randint(1, self.job_len + 1)  # same length in every dimension
+        # same length in every dimension
+        nw_len = np.random.randint(1, self.job_len + 1)
 
         nw_size = np.zeros(self.num_res)
 
@@ -59,26 +60,26 @@ class Dist:
         return nw_len, nw_size
 
 
-def generate_sequence_work(pa, seed=42):
+# def generate_sequence_work(pa, seed=42):
 
-    np.random.seed(seed)
+#     np.random.seed(seed)
 
-    simu_len = pa.simu_len * pa.num_ex
+#     simu_len = pa.simu_len * pa.num_ex
 
-    nw_dist = pa.dist.bi_model_dist
+#     nw_dist = pa.dist.bi_model_dist
 
-    nw_len_seq = np.zeros(simu_len, dtype=int)
-    nw_size_seq = np.zeros((simu_len, pa.num_res), dtype=int)
+#     nw_len_seq = np.zeros(simu_len, dtype=int)
+#     nw_size_seq = np.zeros((simu_len, pa.num_res), dtype=int)
 
-    for i in range(simu_len):
+#     for i in range(simu_len):
 
-        if np.random.rand() < pa.new_job_rate:  # a new job comes
+#         if np.random.rand() < pa.new_job_rate:  # a new job comes
 
-            nw_len_seq[i], nw_size_seq[i, :] = nw_dist()
+#             nw_len_seq[i], nw_size_seq[i, :] = nw_dist()
 
-    nw_len_seq = np.reshape(nw_len_seq,
-                            [pa.num_ex, pa.simu_len])
-    nw_size_seq = np.reshape(nw_size_seq,
-                             [pa.num_ex, pa.simu_len, pa.num_res])
+#     nw_len_seq = np.reshape(nw_len_seq,
+#                             [pa.num_ex, pa.simu_len])
+#     nw_size_seq = np.reshape(nw_size_seq,
+#                              [pa.num_ex, pa.simu_len, pa.num_res])
 
-    return nw_len_seq, nw_size_seq
+#     return nw_len_seq, nw_size_seq
